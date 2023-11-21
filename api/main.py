@@ -38,12 +38,17 @@ def read_jail(jail):
 
 @app.post("/jail/{jail}/addignoreip")
 async def jail_add_ignore_ip(item: Item):
-    addignore = add_ignore_ip(item.ip, item.jail)
+    addignoreip = add_ignore_ip(item.ip, item.jail)
     return item
 
 @app.post("/jail/{jail}/delignoreip")
 async def jail_del_ignore_ip(item: Item):
-    delignore = del_ignore_ip(item.ip, item.jail)
+    delignoreip = del_ignore_ip(item.ip, item.jail)
+    return item
+
+@app.get("/jail/{jail}/ignoreip")
+async def jail_get_ignore_ip(jail):
+    getignoreip = get_ignore_ip(jail)
     return item
 
 @app.post("/ban")
