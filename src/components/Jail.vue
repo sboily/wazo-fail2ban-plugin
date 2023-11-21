@@ -31,7 +31,7 @@
           <h1 class="text-center">{{data.bans_total}}</h1>
         </div>
       </div>
-    </div>    
+    </div>
     <div class="col-sm-3" v-for="data in jail_data">
       <div class="card">
         <div class="card-body">
@@ -49,7 +49,7 @@
       </div>
     </div>
     <div class="col-sm-6 mt-3">
-      <h4 class="float-left">Banned IPs</h4> 
+      <h4 class="float-left">Banned IPs</h4>
       <div class="float-right p-1"><a href="#" @click="refreshData">Refresh <font-awesome-icon icon="sync-alt"/></a></div>
       <input type="text" v-model="search" class="form-control" placeholder="Search IP">
       <div class="mt-2">
@@ -64,6 +64,24 @@
       <form class="form-inline" v-on:submit="banIP" action="#">
         <input type="text" v-model="banningIP"  class="form-control mb-2 mr-sm-2" placeholder="xxx.xxx.xxx.xxx">
         <button type="submit" class="btn btn-secondary mb-2">Ban</button>
+      </form>
+    </div>
+    <div class="col-sm-6 mt-3">
+      <h4 class="float-left">Ignored IPs</h4>
+      <div class="float-right p-1"><a href="#" @click="refreshData">Refresh <font-awesome-icon icon="sync-alt"/></a></div>
+      <input type="text" v-model="search_ignore" class="form-control" placeholder="Search ignore IP">
+      <div class="mt-2">
+        <div v-for="(ip, index) in ignoreIPs" class="delObjects p-1 m-1">
+            {{ip}} <a href="#" v-on:click.prevent="deleteIgnoreObject(ip, index)">&times;</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 mt-3">
+      <h4>Ignore IP</h4>
+      <notifications group="ignoreStatus" />
+      <form class="form-inline" v-on:submit="ignoreIP" action="#">
+        <input type="text" v-model="ignoringIP"  class="form-control mb-2 mr-sm-2" placeholder="xxx.xxx.xxx.xxx">
+        <button type="submit" class="btn btn-secondary mb-2">Ignore IP</button>
       </form>
     </div>
   </div>
@@ -83,13 +101,18 @@ export default {
       jail_data: "",
       jail_name: this.$route.params.jailname,
       banlist: "",
+      ignorelist: "",
       search: "",
+      search_ignore: "",
       banningIP: "",
-      banStatus: ""
+      banStatus: "",
+      ignoreingIP: "",
+      ignoreStatus: ""
     }
   },
   created () {
-    this.getJails()
+    this.getJails();
+    this.getIgnoreIp();
   },
   watch: {
     '$route': 'getJails'
@@ -99,22 +122,36 @@ export default {
       const url = `${window.location.protocol}//${window.location.hostname}/api/jail/${this.jail_name}`;
       axios.get(url)
         .then((resp) => {
-          this.jail_data = resp.data
+          this.jail_data = resp.data;
           for (let key in resp.data) {
-              this.banlist = resp.data[key].bans_iplist
+              this.banlist = resp.data[key].bans_iplist;
             }
         })
         .catch((err) => {
-          console.log(err)
+          console.log(err);
+        })
+    },
+    getIgnoreIp () {
+      const url = `${window.location.protocol}//${window.location.hostname}/api/jail/${this.jail_name}/ignoreip`;
+      axios.get(url)
+        .then((resp) => {
+          this.jail_data = resp.data;
+          for (let key in resp.data) {
+              this.ignorelist = resp.data.details;
+            }
+        })
+        .catch((err) => {
+          console.log(err);
         })
     },
     refreshData() {
-      this.getJails()
+      this.getJails();
+      this.getIgnoreIp();
     },
     ValidateIPaddress(ipaddress) {
-      if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ipaddress))
-      {return (true)}
-      else {return (false)}
+        const octetPattern = "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)";
+        const regex = new RegExp(`^${octetPattern}\\.${octetPattern}\\.${octetPattern}\\.${octetPattern}$`);
+        return regex.test(ipaddress);
     },
     banIP: function(event){
       let validIP = this.ValidateIPaddress(this.banningIP)
@@ -158,9 +195,50 @@ export default {
         });        
       }
     },   
+    ignoreIP: function(event){
+      let validIP = this.ValidateIPaddress(this.ignoringIP)
+      if (this.ignoringIP) {
+        if (validIP) {
+          // POST ignoring IP
+          const url = `${window.location.protocol}//${window.location.hostname}/api/jail/${this.jail_name}/addignoreip`;
+          axios.post(url, {
+              'ip': this.ignoringIP,
+              'jail': this.jail_name,
+            })
+            .then(function (response) {
+              console.log(response);
+            })
+          .catch(function (error) {
+            console.log(error);
+          });
+          // refresh jail needs to wait a lil?
+          this.getIgnoreIp();
+          // notify
+          this.$notify({
+            group: 'ignoreStatus',
+            title: 'Success!',
+            text: '<b>' + this.ignoringIP + '</b>' + ' has been ignored in jail <b>' + this.jail_name + '</b>',
+            type: 'success'
+          });
+        } else {
+          this.$notify({
+            group: 'ignoreStatus',
+            title: 'Error!',
+            text: '<b>' + this.ignoringIP + '</b>' + ' is not a valid IP-address.',
+            type: 'error'
+          });
+        }
+      } else {
+        this.$notify({
+          group: 'ignoreStatus',
+          title: 'Error!',
+          text: 'You have to input something dummy.',
+          type: 'warn'
+        });
+      }
+    },
     deleteObject: function(ip, index) {
       this.$delete(this.banlist, index);
-      console.log(this.banlist)
       // POST unban
       const url = `${window.location.protocol}//${window.location.hostname}/api/unban`;
       axios.post(url, {
@@ -175,13 +253,37 @@ export default {
       });
       // refresh jail
       this.getJails()
-      // notify      
+      // notify
       this.$notify({
         group: 'banStatus',
         title: 'Success!',
         text: '<b>' + ip + '</b>' + ' has been unbanned in jail <b>' + this.jail_name + '</b>',
         type: 'success'
-      });      
+      });
+    },
+    deleteIgnoreObject: function(ip, index) {
+      this.$delete(this.ignorelist, index);
+      // POST delete ignore IP
+      const url = `${window.location.protocol}//${window.location.hostname}/api/jail/${this.jail_name}/delignoreip`;
+      axios.post(url, {
+          'ip': ip,
+          'jail': this.jail_name,
+        })
+        .then(function (response) {
+          console.log(response);
+        })
+      .catch(function (error) {
+        console.log(error);
+      });
+      // refresh jail
+      this.getJails()
+      // notify
+      this.$notify({
+        group: 'ignoreStatus',
+        title: 'Success!',
+        text: '<b>' + ip + '</b>' + ' has been ignored in jail <b>' + this.jail_name + '</b>',
+        type: 'success'
+      });
     },
   },
   computed: {
@@ -193,7 +295,16 @@ export default {
         );
       }
       return filtered;
-    },     
+    },
+    ignoreIPs: function() {
+      let ignored = this.ignorelist;
+      if (this.search_ignore) {
+        ignored = this.ignorelist.filter(
+          m => m.toLowerCase().indexOf(this.search.toLowerCase()) > -1,
+        );
+      }
+      return ignored;
+    },
   }
 }
 </script>

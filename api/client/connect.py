@@ -36,6 +36,7 @@ def parse_to_json(data):
         }
 
     details = {}
+    detailsList = []
     for d in data:
         detail = {}
         key = d[0].lower().replace(" ", "_")
@@ -44,11 +45,14 @@ def parse_to_json(data):
             value = _transform(value)
         if isinstance(value, str) and ',' in value:
             value = value.split(", ")
-        detail[key] = value
-        details.update(detail)
+        if isinstance(d, str):
+            detailsList.append(d)
+        if not detailsList:
+            detail[key] = value
+            details.update(detail)
 
     return {
-        'details': details
+        'details': details or detailsList
     }
 
 
