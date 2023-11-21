@@ -36,15 +36,25 @@ def read_jails():
 def read_jail(jail):
     return(get_jail(jail))
 
+@app.post("/jail/{jail}/addignoreip")
+async def jail_add_ignore_ip(item: Item):
+    addignore = add_ignore_ip(item.ip, item.jail)
+    return item
+
+@app.post("/jail/{jail}/delignoreip")
+async def jail_del_ignore_ip(item: Item):
+    delignore = del_ignore_ip(item.ip, item.jail)
+    return item
+
 @app.post("/ban")
 async def ip_ban(item: Item):
     ban = ban_ip(item.ip, item.jail)
-    return item 
+    return item
 
 @app.post("/unban")
 async def ip_unban(item: Item):
     unban = unban_ip(item.ip, item.jail)
-    return item  
+    return item
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host=api_host, port=api_port, reload=True)
