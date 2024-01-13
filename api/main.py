@@ -3,7 +3,7 @@ import requests
 from fastapi import FastAPI
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
-from services import main, get_jail, ban_ip, unban_ip
+from services import main, get_jail, ban_ip, unban_ip, add_ignore_ip, del_ignore_ip, get_ignore_ip
 
 
 app = FastAPI()
@@ -36,15 +36,29 @@ def read_jails():
 def read_jail(jail):
     return(get_jail(jail))
 
+@app.post("/jail/{jail}/addignoreip")
+async def jail_add_ignore_ip(item: Item):
+    addignoreip = add_ignore_ip(item.ip, item.jail)
+    return item
+
+@app.post("/jail/{jail}/delignoreip")
+async def jail_del_ignore_ip(item: Item):
+    delignoreip = del_ignore_ip(item.ip, item.jail)
+    return item
+
+@app.get("/jail/{jail}/ignoreip")
+async def jail_get_ignore_ip(jail):
+    return(get_ignore_ip(jail))
+
 @app.post("/ban")
 async def ip_ban(item: Item):
     ban = ban_ip(item.ip, item.jail)
-    return item 
+    return item
 
 @app.post("/unban")
 async def ip_unban(item: Item):
     unban = unban_ip(item.ip, item.jail)
-    return item  
+    return item
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host=api_host, port=api_port, reload=True)

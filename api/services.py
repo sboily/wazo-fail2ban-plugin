@@ -72,3 +72,15 @@ def ban_ip(ip, jail):
 def unban_ip(ip, jail):
     print(f"Unbanning {ip} in jail {jail}")
     return send_cmd(f'set {jail} unbanip {ip}')
+
+def add_ignore_ip(ip, jail):
+    print(f"Add ignore {ip} in jail {jail}")
+    return send_cmd(f'set {jail} addignoreip {ip}')
+
+def del_ignore_ip(ip, jail):
+    print(f"Del ignore {ip} in jail {jail}")
+    return send_cmd(f'set {jail} delignoreip {ip}')
+
+def get_ignore_ip(jail):
+    print(f"Get ignore in jail {jail}")
+    return send_cmd(f'get {jail} ignoreip')
